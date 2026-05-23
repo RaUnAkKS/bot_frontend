@@ -113,7 +113,6 @@ const useSpeechRecognition = () => {
     if (!recognitionRef.current || !isSupported) return;
 
     setError(null);
-    setTranscript('');
     setInterimTranscript('');
 
     try {

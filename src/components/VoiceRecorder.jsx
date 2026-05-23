@@ -11,6 +11,7 @@ const VoiceRecorder = ({
   onStart,
   onStop,
   onSend,
+  onCancel,
   transcript,
   interimTranscript,
   isProcessing,
@@ -77,6 +78,11 @@ const VoiceRecorder = ({
                </div>
                <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Processing...</span>
              </div>
+          ) : transcript ? (
+            <div className="flex flex-col items-center sm:items-start animate-fade-in">
+              <h3 className="text-base font-bold text-surface-800 dark:text-surface-100">Review Transcript</h3>
+              <p className="text-xs text-surface-500 mt-1">Send your message or cancel</p>
+            </div>
           ) : (
             <div className="flex flex-col items-center sm:items-start animate-fade-in">
               <h3 className="text-base font-bold text-surface-800 dark:text-surface-100">Ready to listen</h3>
@@ -87,47 +93,64 @@ const VoiceRecorder = ({
 
         {/* Right Controls Area */}
         <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
-          {/* Main Record Button */}
-          <div className="relative">
-            {isListening && (
-              <div className="absolute inset-0 rounded-full border-2 border-primary-500/50 animate-[micPulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]" />
-            )}
-            
-            <button
-              id={isListening ? "stop-mic-btn" : "start-mic-btn"}
-              onClick={isListening ? onStop : onStart}
-              disabled={!isSupported || isProcessing}
-              className={`relative z-10 flex items-center justify-center w-16 h-16 sm:w-14 sm:h-14 rounded-full shadow-xl transition-all duration-300 ${
-                isListening 
-                  ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white hover:scale-105 shadow-rose-500/30' 
-                  : 'bg-gradient-to-br from-primary-500 to-primary-600 text-white btn-glow hover:scale-105 disabled:opacity-50 disabled:hover:scale-100'
-              }`}
-            >
-              {isListening ? (
-                <svg className="w-6 h-6 sm:w-5 sm:h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 6h12v12H6z" />
-                </svg>
-              ) : (
-                <svg className="w-7 h-7 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
+          {/* Main Record Button (Hidden if transcript is pending) */}
+          {!transcript && (
+            <div className="relative animate-fade-in">
+              {isListening && (
+                <div className="absolute inset-0 rounded-full border-2 border-primary-500/50 animate-[micPulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]" />
               )}
-            </button>
-          </div>
+              
+              <button
+                id={isListening ? "stop-mic-btn" : "start-mic-btn"}
+                onClick={isListening ? onStop : onStart}
+                disabled={!isSupported || isProcessing}
+                className={`relative z-10 flex items-center justify-center w-16 h-16 sm:w-14 sm:h-14 rounded-full shadow-xl transition-all duration-300 ${
+                  isListening 
+                    ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white hover:scale-105 shadow-rose-500/30' 
+                    : 'bg-gradient-to-br from-primary-500 to-primary-600 text-white btn-glow hover:scale-105 disabled:opacity-50 disabled:hover:scale-100'
+                }`}
+              >
+                {isListening ? (
+                  <svg className="w-6 h-6 sm:w-5 sm:h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 6h12v12H6z" />
+                  </svg>
+                ) : (
+                  <svg className="w-7 h-7 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
 
-          {/* Send Button (Only shows when there's transcript and not listening) */}
+          {/* Action Buttons (Shows when there's transcript and not listening) */}
           {transcript && !isListening && (
-            <button
-              id="send-msg-btn"
-              onClick={onSend}
-              disabled={isProcessing}
-              className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 animate-slide-in-right"
-              aria-label="Send message"
-            >
-              <svg className="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-3 animate-fade-in">
+              {/* Cancel Button */}
+              <button
+                onClick={onCancel}
+                disabled={isProcessing}
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-surface-200 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-300 dark:hover:bg-surface-700 transition-all duration-200 disabled:opacity-50"
+                aria-label="Cancel message"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Send Button */}
+              <button
+                id="send-msg-btn"
+                onClick={onSend}
+                disabled={isProcessing}
+                className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50"
+                aria-label="Send message"
+              >
+                <svg className="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
         

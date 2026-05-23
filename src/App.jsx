@@ -83,6 +83,12 @@ function App() {
   }, []);
 
   // ─── Handlers ──────────────────────────────────────────────
+  const handleStartListening = useCallback(() => {
+    // Interrupt any ongoing bot speech immediately
+    stopSpeaking();
+    startListening();
+  }, [stopSpeaking, startListening]);
+
   const handleSend = useCallback(async (forcedText = null) => {
     const messageText = (forcedText || transcript).trim();
     if (!messageText || isProcessing) return;
@@ -130,13 +136,6 @@ function App() {
       setIsProcessing(false);
     }
   }, [transcript, isProcessing, sessionId, resetTranscript, speak, stopSpeaking]);
-
-  // Auto-send when microphone stops
-  useEffect(() => {
-    if (!isListening && transcript.trim() !== '') {
-      handleSend();
-    }
-  }, [isListening, transcript, handleSend]);
 
   const handleLoadSession = useCallback((loadedSessionId, sessionMessages) => {
     setSessionId(loadedSessionId);
@@ -209,9 +208,10 @@ function App() {
               isListening={isListening}
               isSupported={sttSupported}
               error={speechError}
-              onStart={startListening}
+              onStart={handleStartListening}
               onStop={stopListening}
-              onSend={handleSend}
+              onSend={() => handleSend()}
+              onCancel={resetTranscript}
               transcript={transcript}
               interimTranscript={interimTranscript}
               isProcessing={isProcessing}

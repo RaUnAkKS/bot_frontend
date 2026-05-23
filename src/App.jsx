@@ -6,7 +6,7 @@ import ChatWindow from './components/ChatWindow';
 import HistorySidebar from './components/HistorySidebar';
 import useSpeechRecognition from './hooks/useSpeechRecognition';
 import useSpeechSynthesis from './hooks/useSpeechSynthesis';
-import { sendMessage } from './services/api';
+import { sendMessage, getHistory } from './services/api';
 
 function App() {
   // ─── State ─────────────────────────────────────────────────
@@ -52,9 +52,39 @@ function App() {
     localStorage.setItem('voicebot-session-id', sessionId);
   }, [sessionId]);
 
+  // Load initial history on mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchInitialHistory = async () => {
+      try {
+        const history = await getHistory(sessionId);
+        if (isMounted && history && history.length > 0) {
+          const formattedMessages = history.map((msg) => ([
+            {
+              role: 'user',
+              text: msg.user_message,
+              time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+            {
+              role: 'bot',
+              text: msg.bot_reply,
+              time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ])).flat();
+          setMessages(formattedMessages);
+        }
+      } catch (err) {
+        console.error('[App] Failed to fetch initial history:', err);
+      }
+    };
+    fetchInitialHistory();
+    return () => { isMounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ─── Handlers ──────────────────────────────────────────────
-  const handleSend = useCallback(async () => {
-    const messageText = transcript.trim();
+  const handleSend = useCallback(async (forcedText = null) => {
+    const messageText = (forcedText || transcript).trim();
     if (!messageText || isProcessing) return;
 
     // Stop any ongoing speech
@@ -101,6 +131,13 @@ function App() {
     }
   }, [transcript, isProcessing, sessionId, resetTranscript, speak, stopSpeaking]);
 
+  // Auto-send when microphone stops
+  useEffect(() => {
+    if (!isListening && transcript.trim() !== '') {
+      handleSend();
+    }
+  }, [isListening, transcript, handleSend]);
+
   const handleLoadSession = useCallback((loadedSessionId, sessionMessages) => {
     setSessionId(loadedSessionId);
     const formattedMessages = sessionMessages.map((msg) => ([
@@ -144,27 +181,15 @@ function App() {
           onClose={() => setSidebarOpen(false)}
           onLoadSession={handleLoadSession}
           currentSessionId={sessionId}
+          refreshTrigger={messages.length}
+          onNewChat={handleNewChat}
         />
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col min-w-0 max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative h-full">
           
-          {/* Top Actions */}
-          <div className="flex justify-end mb-4 sm:mb-6">
-            <button
-              id="new-chat-btn"
-              onClick={handleNewChat}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold glass shadow-sm hover:shadow-md hover:bg-white/80 dark:hover:bg-surface-800/80 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-surface-700 dark:text-surface-200"
-            >
-              <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-              </svg>
-              New Chat
-            </button>
-          </div>
-
           {/* Chat Window - takes up remaining space above the sticky recorder */}
-          <div className="flex-1 min-h-0 mb-4 lg:mb-6 rounded-[2rem] shadow-2xl flex flex-col">
+          <div className="flex-1 min-h-0 mt-4 lg:mt-6 mb-4 lg:mb-6 rounded-[2rem] shadow-2xl flex flex-col">
             <ChatWindow
               messages={messages}
               isTyping={isProcessing}

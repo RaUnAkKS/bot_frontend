@@ -16,7 +16,7 @@ const VoiceRecorder = ({
   isProcessing,
 }) => {
   return (
-    <div className="glass-strong rounded-[2rem] p-4 sm:p-6 shadow-2xl relative overflow-hidden">
+    <div className="glass-strong rounded-[2rem] p-4 pb-8 sm:p-6 shadow-2xl relative overflow-hidden">
       {/* Subtle background glow when listening */}
       {isListening && (
         <div className="absolute inset-0 bg-primary-500/5 animate-pulse-slow pointer-events-none" />
@@ -86,7 +86,7 @@ const VoiceRecorder = ({
         </div>
 
         {/* Right Controls Area */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
           {/* Main Record Button */}
           <div className="relative">
             {isListening && (

@@ -43,7 +43,14 @@ const useSpeechRecognition = () => {
       }
 
       if (final) {
-        setTranscript((prev) => (prev + final).trim());
+        const newFinal = final.trim();
+        setTranscript((prev) => {
+          // Prevent duplicate final results (common bug in Chrome Speech API)
+          if (newFinal && prev.endsWith(newFinal)) {
+            return prev;
+          }
+          return prev ? `${prev} ${newFinal}` : newFinal;
+        });
       }
       setInterimTranscript(interim);
     };
